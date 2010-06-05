@@ -9,8 +9,8 @@
 <?rfc comments="yes"?>
 <?rfc inline="yes"?>
 <?rfc compact="yes"?>
-<?rfc subcompact="no"?>
-<rfc category="exp" docName="draft-pubsubhubbub-json-00" ipr="trust200902">
+<?rfc subcompact="yes"?>
+<rfc category="exp" docName="draft-pubsubhubbub-json-00" ipr="none">
   <front>
     <title abbrev="JSON-Hubbub">PubSubHubbub for JSON</title>
 
@@ -21,10 +21,10 @@
     <date />
 
     <abstract>
-      <t>PubSubHubbub [TODO: xref] defines a protocol for subscribing to
-      notifications of new or modified items in an Atom or RSS feed. This
-      specification defines an alternative payload format that can be used to
-      subscribe to JSON-based stream resources.</t>
+      <t>PubSubHubbub defines a protocol for subscribing to notifications of
+      new or modified items in an Atom or RSS feed. This specification defines
+      an alternative payload format that can be used to subscribe to
+      JSON-based stream resources.</t>
     </abstract>
 
     <note title="Requirements Language">
@@ -37,71 +37,209 @@
 
   <middle>
     <section title="Introduction">
-      <t>PubSubHubbub [TODO: xref] defines a protocol for subscribing to
-      notifications of new or modified items in an Atom or RSS feed. This
-      specification defines an alternative payload format that can be used to
-      subscribe to JSON-based stream resources.</t>
+      <t><xref target="PUBSUBHUBBUB">PubSubHubbub</xref> defines a protocol
+      for subscribing to notifications of new or modified items in an Atom or
+      RSS feed. This specification defines an alternative payload format that
+      can be used to subscribe to JSON-based stream resources.</t>
 
       <t>This protocol is intended only to provide a basic transport format
       for shipping JSON data payloads. This specification does not define the
       format of such data payloads except to say that they must be JSON
       objects. Other specifications may define specific payload formats to
       enable specific application use-cases.</t>
+
+      <t>This specification provides only notifications that a new item has
+      appeared in the set of all items for the topic. However, applications
+      built on this specification MAY define a payload format that affords the
+      use of this format for more sophisticated data synchronization. A goal
+      of this specification is for a JSON-aware hub to be agnostic to the
+      nature of the payloads it is being asked to deliver, such that a variety
+      of application protocols may use this protocol as a transport without
+      requiring changes to the hub implementation.</t>
+    </section>
+
+    <section anchor="discovery" title="Determining the Topic URL and Hub URL">
+      <t>The Topic URL is provided by the publisher to the subscriber via a
+      means outside of the scope of this specification.</t>
+
+      <t>A publisher SHOULD make available at the Topic URL a Discovery
+      Document as defined in <xref target="discovery-format"></xref> which
+      allows a subscriber to locate the Hub URLs that will accept
+      subscriptions for the Topic URL.</t>
+
+      <t>If the publisher and subscriber have a pre-existing relationship, the
+      Hub URLs MAY be determined by another means such as the publisher's API
+      documentation. In this scenario, the Topic URL MAY be an unresolvable
+      URI that merely serves as an shared identifier for the topic between the
+      subscriber and the publisher. However, in this configuration this
+      protocol provides no means for the subscriber to backfill previous items
+      on subscription or after an outage; the publisher SHOULD provide some
+      other means outside of this specification for the subscriber to perform
+      backfill.</t>
+    </section>
+
+    <section title="Subscribing and Unsubscribing">
+      <t>The specification re-uses the subscription and notification protocols
+      described in section 6 of <xref target="PUBSUBHUBBUB"></xref>. The Topic
+      URL and Hub URL to use for these protocols are those discovered as
+      defined in <xref target="discovery"></xref>.</t>
+    </section>
+
+    <section title="Publication">
+      <t>This specification defines a variation on the publication protocol
+      defined in section 7 of <xref target="PUBSUBHUBBUB"></xref>, adapted to
+      accomodate payloads in JSON format.</t>
+
+      <section title="New Content Notification">
+        <t>When new content is added to a feed, a notification is sent to the
+        hub by the publisher as defined in section 7.1 of <xref
+        target="PUBSUBHUBBUB"></xref>, except that Content Fetch is performed
+        as defined in <xref target="content-fetch"></xref>.</t>
+      </section>
+
+      <section anchor="content-fetch" title="Content Fetch">
+        <t>When the hub wishes to retrieve new content for a topic, the hub
+        sends an HTTP [RFC2616] GET request to the topic URL. The hub MUST
+        follow HTTP redirects. The Hub SHOULD use HTTP conditional GET
+        mechanisms in its requests to reduce load on the publisher.</t>
+
+        <t>The request SHOULD include a <spanx style="verb">User-Agent</spanx>
+        header field whose value is as defined in section 7.2 of <xref
+        target="PUBSUBHUBBUB"></xref>.</t>
+
+        <t>The response to the Content Fetch MUST contain a Discovery Document
+        as defined in <xref target="discovery-format"></xref>. In this case
+        the resulting document MUST contain the <spanx style="verb">items </spanx>property.
+        The hub MUST determine whether any of the payload objects are new
+        since the last Content Fetch, comparing for equality as defined in
+        <xref target="payload-comparison"></xref>, and then notify all of the
+        subscribers of this topic about the new objects as defined in <xref
+        target="content-distribution"></xref>.</t>
+      </section>
+
+      <section anchor="content-distribution" title="Content Distribution">
+        <t>A hub notifies a subscriber of a selection of new objects using a
+        <spanx style="verb">POST</spanx> request to the subscriber's
+        registered callback URL as described in section 7.3 of <xref
+        target="PUBSUBHUBBUB"></xref>, except that the <spanx style="verb">Content-Type</spanx>
+        header field value MUST be <spanx style="verb">application/json</spanx>
+        and its entity body MUST be a Notification Message as described in
+        <xref target="notification-format"></xref>.</t>
+
+        <t>The request signing requirements in section 7.4 of <xref
+        target="PUBSUBHUBBUB"></xref> also apply to this request.</t>
+
+        <t>When a subscriber provides the same callback URL and secret for
+        multiple subscriptions, a hub MAY combine payloads pertaining to
+        several subscriptions into a single Content Distribution request,
+        identifying the subscription's corresponding Topic URL in each
+        Notification Packet. Notifications for several subscriptions with
+        differing secrets MUST NOT be combined in this way, since the
+        notification signature applies to the entire message payload.</t>
+      </section>
     </section>
 
     <section anchor="notification-format" title="Notification Message Format">
       <t>This section defines an envelope that is used to deliver a sequence
-      of data payloads in the form of a JSON document.</t>
+      of data payloads in the form of a JSON text.</t>
 
-      <t>The root of the JSON document is a JSON object containing a single
+      <t>The root of the JSON text is a JSON object containing a single
       property called <spanx style="verb">items</spanx>. The value of this
+      property is a JSON array. This JSON array contains as its items a JSON
+      object representing a Notification Packet for each payload in this
+      message. Each of these Notification Packet objects contains a property
+      called <spanx style="verb">topic</spanx> whose value is a JSON string
+      containing the Topic URL to which this payload was published, and a
+      property called <spanx style="verb">payload</spanx> whose value is the
+      JSON object representing the payload.</t>
+
+      <t>Application-layer specifications building on this specification MAY
+      define additional properties inside the Notification Message root
+      object. Implementations MUST ignore properties that they do not
+      understand.</t>
+    </section>
+
+    <section anchor="discovery-format" title="Discovery Document Format">
+      <t>This section defines a message format that can be used by the
+      publisher to discover the locations of its the available hubs for the
+      topic and optionally to obtain a backlog of payload items in order to
+      "catch up" on payload objects for which notifications were not received
+      for some reason. This document format is also used to communicate new
+      items from publisher to hub in the traditional loosely-coupled publisher
+      and hub scenario. This document is a JSON text.</t>
+
+      <t>The root of the Discovery Document is a JSON object containing a
+      property called <spanx style="verb">hubs</spanx>. The value of this
       property is a JSON array. Each of the items in the JSON array is a JSON
-      object representing a payload object. The properties of this object are
-      not defined by this specification.</t>
+      string containing the URL of a hub as defined in section 2 of <xref
+      target="PUBSUBHUBBUB"></xref>. All of the hubs in this list MUST be hubs
+      that are able to accept subscriptions for the topic represented by the
+      discovery document and are able to provide hub services for JSON-based
+      stream resources.</t>
 
-      <section title="Discovery Document Format">
-        <t>This section defines an variation on the basic notification
-        envelope described in <xref target="notification-format"></xref> that
-        can be used by the publisher to discover the locations of its the
-        available hubs for the topic and optionally to obtain a backlog of
-        payload items in order to "catch up" on payload objects for which
-        notifications were not received for some reason.</t>
-
-        <t>The root of </t>
-      </section>
+      <t>The root object of the Discovery Document SHOULD also contain a
+      property called <spanx style="verb">items</spanx>. If present, its value
+      is a JSON array of JSON objects each representing payloads recently
+      added for the topic.</t>
     </section>
 
-    <section title="Determining the Topic URL and Hub URL">
-      <t>The Topic URL is provided by the publisher to the subscriber via a
-      means outside of the scope of this specification.</t>
-
-      <t>A publisher SHOULD make available at the Topic URL </t>
+    <section anchor="payload-comparison"
+             title="Comparing Payloads for Equality">
+      <t>Two Payloads are considered to be equal if they are byte-for-byte
+      equal after serializing to a JSON text, where both Payloads were
+      serialized using identical serialization settings with regard to
+      pretty-printing and character encoding. Implementations MAY use an
+      appropriate hashing algorithm on the resulting JSON text to reduce
+      comparison and storage overhead, but the chosen hashing algorithm MUST
+      have a low likelyhood of collision within a set of recent payloads of a
+      given topic URL.</t>
     </section>
 
-    <section title="Subscription and Notification">
-      <t>The specification re-uses the subscription and notification protocols
-      from PubSubHubbub.</t>
-    </section>
-
-    <section anchor="IANA" title="IANA Considerations">
-      <t>This document makes no request of IANA.</t>
-
-      <t>Note to RFC Editor: this section may be removed on publication as an
-      RFC.</t>
-    </section>
-
-    <section anchor="Security" title="Security Considerations">
-      <t></t>
-    </section>
-
-    <section anchor="Acknowledgements" title="Acknowledgements">
-      <t></t>
+    <section anchor="acknowledgements" title="Acknowledgements">
+      <t>This document builds upon the work of Brad Fitzpatrick and Brett
+      Slatkin in defining the PubSubHubbub subscription mechanism, and an
+      initial notification format suitable for communicating changes to
+      syndication feeds. It also takes inspiration from XMPP, a work of the
+      IETF XMPP working group in the form of the "smarts at the edges" design
+      that this specification affords.</t>
     </section>
   </middle>
 
   <back>
     <references title="Normative References">
-      <?rfc include="reference.RFC.2119"?>
+      <reference anchor="PUBSUBHUBBUB">
+        <front>
+          <title>PubSubHubbub Core 0.3 Working Draft</title>
+
+          <author fullname="Brad Fitzpatrick" initials="B."
+                  surname="Fitzpatrick">
+            <organization>Google, Inc.</organization>
+          </author>
+
+          <author fullname="Brett Slatkin" initials="B." surname="Slatkin">
+            <organization>Google, Inc.</organization>
+          </author>
+
+          <author fullname="Martin Atkins" initials="M." surname="Atkins">
+            <organization>Six Apart Ltd.</organization>
+          </author>
+
+          <date day="8" month="February" year="2010" />
+        </front>
+      </reference>
+
+      <reference anchor="RFC2119">
+        <front>
+          <title>Key words for use in RFCs to Indicate Requirement
+          Levels</title>
+
+          <author fullname="Scott Bradner" initials="S." surname="Bradner">
+            <organization>Harvard University</organization>
+          </author>
+
+          <date month="March" year="1997" />
+        </front>
+      </reference>
     </references>
   </back>
 </rfc>
