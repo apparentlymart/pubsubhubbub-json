@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="US-ASCII"?>
+<!DOCTYPE rfc SYSTEM "rfc2629.dtd">
+<?rfc toc="yes"?>
+<?rfc tocompact="yes"?>
+<?rfc tocdepth="3"?>
+<?rfc tocindent="yes"?>
+<?rfc symrefs="yes"?>
+<?rfc sortrefs="yes"?>
+<?rfc comments="yes"?>
+<?rfc inline="yes"?>
+<?rfc compact="yes"?>
+<?rfc subcompact="no"?>
+<rfc category="exp" docName="draft-pubsubhubbub-json-00" ipr="trust200902">
+  <front>
+    <title abbrev="JSON-Hubbub">PubSubHubbub for JSON</title>
+
+    <author fullname="Martin Atkins" initials="M." surname="Atkins">
+      <organization></organization>
+    </author>
+
+    <date />
+
+    <abstract>
+      <t>PubSubHubbub [TODO: xref] defines a protocol for subscribing to
+      notifications of new or modified items in an Atom or RSS feed. This
+      specification defines an alternative payload format that can be used to
+      subscribe to JSON-based stream resources.</t>
+    </abstract>
+
+    <note title="Requirements Language">
+      <t>The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+      "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+      document are to be interpreted as described in <xref
+      target="RFC2119">RFC 2119</xref>.</t>
+    </note>
+  </front>
+
+  <middle>
+    <section title="Introduction">
+      <t>PubSubHubbub [TODO: xref] defines a protocol for subscribing to
+      notifications of new or modified items in an Atom or RSS feed. This
+      specification defines an alternative payload format that can be used to
+      subscribe to JSON-based stream resources.</t>
+
+      <t>This protocol is intended only to provide a basic transport format
+      for shipping JSON data payloads. This specification does not define the
+      format of such data payloads except to say that they must be JSON
+      objects. Other specifications may define specific payload formats to
+      enable specific application use-cases.</t>
+    </section>
+
+    <section anchor="notification-format" title="Notification Message Format">
+      <t>This section defines an envelope that is used to deliver a sequence
+      of data payloads in the form of a JSON document.</t>
+
+      <t>The root of the JSON document is a JSON object containing a single
+      property called <spanx style="verb">items</spanx>. The value of this
+      property is a JSON array. Each of the items in the JSON array is a JSON
+      object representing a payload object. The properties of this object are
+      not defined by this specification.</t>
+
+      <section title="Discovery Document Format">
+        <t>This section defines an variation on the basic notification
+        envelope described in <xref target="notification-format"></xref> that
+        can be used by the publisher to discover the locations of its the
+        available hubs for the topic and optionally to obtain a backlog of
+        payload items in order to "catch up" on payload objects for which
+        notifications were not received for some reason.</t>
+
+        <t>The root of </t>
+      </section>
+    </section>
+
+    <section title="Determining the Topic URL and Hub URL">
+      <t>The Topic URL is provided by the publisher to the subscriber via a
+      means outside of the scope of this specification.</t>
+
+      <t>A publisher SHOULD make available at the Topic URL </t>
+    </section>
+
+    <section title="Subscription and Notification">
+      <t>The specification re-uses the subscription and notification protocols
+      from PubSubHubbub.</t>
+    </section>
+
+    <section anchor="IANA" title="IANA Considerations">
+      <t>This document makes no request of IANA.</t>
+
+      <t>Note to RFC Editor: this section may be removed on publication as an
+      RFC.</t>
+    </section>
+
+    <section anchor="Security" title="Security Considerations">
+      <t></t>
+    </section>
+
+    <section anchor="Acknowledgements" title="Acknowledgements">
+      <t></t>
+    </section>
+  </middle>
+
+  <back>
+    <references title="Normative References">
+      <?rfc include="reference.RFC.2119"?>
+    </references>
+  </back>
+</rfc>
